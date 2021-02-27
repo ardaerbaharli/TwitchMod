@@ -48,7 +48,7 @@ namespace twitchMod
             btnTimeout.TabStop = true;
 
             AddBlacklist.FlatStyle = FlatStyle.Flat;
-            AddBlacklist.FlatAppearance.BorderSize =1;
+            AddBlacklist.FlatAppearance.BorderSize = 1;
             AddBlacklist.TabStop = true;
 
             Control.CheckForIllegalCrossThreadCalls = false;
@@ -83,7 +83,7 @@ namespace twitchMod
         public static TwitchClient client;
         public static TwitchAPI api;
 
-        private List<string> filter;
+        private static List<string> filter;
         public void Connect()
         {
             filter = Database.GetBlacklistWords();
@@ -107,15 +107,22 @@ namespace twitchMod
 
         private async void Client_OnMessageReceived(object sender, TwitchLib.Client.Events.OnMessageReceivedArgs e)
         {
-            string message = e.ChatMessage.Message;
-            string[] fragmentedMessage = message.Split(' ', ',', '.', ':', ';', '\t');
-            string username = e.ChatMessage.Username;
-            if (filter.Any(s => message.Contains(s)))
+            var cm = e.ChatMessage;
+            if (!cm.IsBroadcaster && !cm.IsModerator)
             {
-                await AddToList(username, message);
+                string message = cm.Message;
+                string[] fragmentedMessage = message.Split(' ', ',', '.', ':', ';', '\t');
+                string username = cm.Username;
+                if (filter.Any(s => message.Contains(s)))
+                {
+                    await AddToList(username, message);
+                }
             }
         }
-
+        public static void UpdateFilter()
+        {
+            filter = Database.GetBlacklistWords();
+        }
         private Task AddToList(string username, string message)
         {
             ListViewItem itm = new ListViewItem(new[] { username, message });
@@ -131,20 +138,26 @@ namespace twitchMod
 
         private void AddBlacklist_Click(object sender, EventArgs e)
         {
-            Database.AddBlacklistWord(txtBlacklist.Text);
-            txtBlacklist.Clear();
-            filter = Database.GetBlacklistWords();
+            if (!string.IsNullOrEmpty(txtBlacklist.Text))
+            {
+                Database.AddBlacklistWord(txtBlacklist.Text);
+                txtBlacklist.Clear();
+                filter = Database.GetBlacklistWords();
+            }
         }
 
         private void btnBan_Click(object sender, EventArgs e)
         {
             try
             {
-                string username = blacklistView.SelectedItems[0].Text;
-                string message = blacklistView.SelectedItems[0].SubItems[1].Text;
-
-                if (username != null && message != null)
-                    client.BanUser(channelName, username, message);
+                foreach (ListViewItem item in blacklistView.SelectedItems)
+                {
+                    string username = item.SubItems[0].Text;
+                    string message = item.SubItems[1].Text;
+                    if (username != null && message != null)
+                        client.BanUser(channelName, username, message);
+                    blacklistView.Items.Remove(item);
+                }
             }
             catch (Exception)
             {
@@ -156,10 +169,7 @@ namespace twitchMod
         {
             try
             {
-                string username = blacklistView.SelectedItems[0].Text;
-                string message = blacklistView.SelectedItems[0].SubItems[1].Text;
                 int timeoutDuration = Convert.ToInt32(num.Value);
-
                 if (ra600.Checked)
                 {
                     ra600.Checked = false;
@@ -180,12 +190,18 @@ namespace twitchMod
                     ra1.Checked = false;
                     timeoutDuration = 1;
                 }
-                if (username != null && message != null)
-                {
-                    client.TimeoutUser(channelName, username, TimeSpan.FromSeconds(timeoutDuration), message);
-                    num.Value = 1;
-                }
 
+                foreach (ListViewItem item in blacklistView.SelectedItems)
+                {
+                    string username = item.SubItems[0].Text;
+                    string message = item.SubItems[1].Text;
+                    if (username != null && message != null)
+                    {
+                        client.TimeoutUser(channelName, username, TimeSpan.FromSeconds(timeoutDuration), message);
+                        num.Value = 1;
+                    }
+                    blacklistView.Items.Remove(item);
+                }
             }
             catch (Exception)
             {
