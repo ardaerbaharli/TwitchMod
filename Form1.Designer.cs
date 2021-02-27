@@ -57,7 +57,6 @@
             this.blacklistView.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(77)))), ((int)(((byte)(44)))));
             this.blacklistView.HideSelection = false;
             this.blacklistView.Location = new System.Drawing.Point(12, 47);
-            this.blacklistView.MultiSelect = false;
             this.blacklistView.Name = "blacklistView";
             this.blacklistView.Size = new System.Drawing.Size(363, 394);
             this.blacklistView.TabIndex = 1;
