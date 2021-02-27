@@ -64,6 +64,7 @@ namespace twitchMod
 
                 List<string> blacklistWords = Database.GetBlacklistWords();
                 FillListview(blacklistWords);
+                Form1.UpdateFilter();
             }
             catch (Exception)
             {
